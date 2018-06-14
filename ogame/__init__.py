@@ -130,7 +130,7 @@ def get_code(name):
 
 @for_all_methods(sandbox_decorator)
 class OGame(object):
-    def __init__(self, universe, universe_id, universe_url, username, password, domain='es.ogame.gameforge.com', auto_bootstrap=True,
+    def __init__(self, universe, universe_id, username, password, domain='es.ogame.gameforge.com', auto_bootstrap=True,
                  sandbox=False, sandbox_obj=None, use_proxy=False, proxy_port=9050):
         self.session = requests.session()
         self.session.headers.update({
@@ -150,7 +150,7 @@ class OGame(object):
         if use_proxy:
             self.session.proxies.update(get_proxies(proxy_port))
         self.universe_id = universe_id
-        self.universe_url = universe_url
+        self.universe_url = 's{}-es.ogame.gameforge.com'.format(self.universe_id)
 
     def login(self):
         """Get the ogame session token."""
