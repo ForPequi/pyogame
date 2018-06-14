@@ -725,7 +725,7 @@ class OGame(object):
         return servers
 
     def get_universe_url(self, universe):
-        return self.universe_url
+        return 's{}-es.ogame.gameforge.com'.format(self.universe_id)
 
     def get_server_time(self):
         """Get the ogame server time."""
