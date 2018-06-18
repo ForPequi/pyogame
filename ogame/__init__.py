@@ -3,8 +3,6 @@ import json
 import math
 import re
 import time
-from random import random
-
 import arrow
 import requests
 import json
@@ -26,7 +24,7 @@ def get_proxies(port=9050):
     return proxies
 
 
-def get_ip(proxies=None):
+def get_ip():
     url = 'http://ifconfig.me/ip'
     response = requests.get(url, proxies=proxies)
     return 'tor ip: {}'.format(response.text.strip())
@@ -130,7 +128,7 @@ def get_code(name):
 
 @for_all_methods(sandbox_decorator)
 class OGame(object):
-    def __init__(self, universe, universe_id, username, password, domain='es.ogame.gameforge.com', auto_bootstrap=True,
+    def __init__(self, universe, username, password, domain='en.ogame.gameforge.com', auto_bootstrap=True,
                  sandbox=False, sandbox_obj=None, use_proxy=False, proxy_port=9050):
         self.session = requests.session()
         self.session.headers.update({
@@ -149,57 +147,17 @@ class OGame(object):
             self.universe_speed = self.get_universe_speed()
         if use_proxy:
             self.session.proxies.update(get_proxies(proxy_port))
-        self.universe_id = universe_id
-        self.universe_url = 's{}-es.ogame.gameforge.com'.format(self.universe_id)
 
     def login(self):
         """Get the ogame session token."""
         if self.server_url == '':
             self.server_url = self.get_universe_url(self.universe)
-
-        # 1 login to lobby
         payload = {'kid': '',
-                   'language': 'fr',
-                   'autologin': 'false',
-                   'credentials[email]': self.username,
-                   'credentials[password]': self.password}
-
-        time.sleep(random.uniform(1, 2))
-        res = self.session.post('https://lobby-api.ogame.gameforge.com/users', data=payload)
-
-        php_session_id = None
-
-        for c in res.cookies:
-            if c.name == 'PHPSESSID':
-                php_session_id = c.value
-
-        # 2 retrieve server accounts from ogame lobby session and get selected server id
-        cookie = {'PHPSESSID': php_session_id}
-
-        time.sleep(random.uniform(1, 2))
-        res = self.session.get('https://lobby-api.ogame.gameforge.com/users/me/accounts', cookies=cookie)
-
-        selected_server_id = None
-        server_accounts = res.json()
-        for server_account in server_accounts:
-            if server_account['server']['number'] == self.universe_id:
-                selected_server_id = server_account['id']
-
-        # 3 retrieve the selected server url with token
-        cookie = {'PHPSESSID': php_session_id}
-
-        time.sleep(random.uniform(1, 2))
-        res = self.session.get(
-            'https://lobby-api.ogame.gameforge.com/users/me/loginLink?id={}&server[language]=fr&server[number]={}'.format(
-                selected_server_id, str(self.universe_id)), cookies=cookie).json()
-
-        selected_server_url = res['url']
-
-        # 4 get the selected server page from the url
-        res = self.session.get(selected_server_url).content
-
+                   'uni': self.server_url,
+                   'login': self.username,
+                   'pass': self.password}
+        res = self.session.post(self.get_url('login'), data=payload).content
         soup = BeautifulSoup(res, 'lxml')
-        self.new_messages = soup.find('span', {'class': 'noMessage'}) == None
         session_found = soup.find('meta', {'name': 'ogame-session'})
         if session_found:
             self.ogame_session = session_found.get('content')
@@ -725,7 +683,12 @@ class OGame(object):
         return servers
 
     def get_universe_url(self, universe):
-        return 's{}-es.ogame.gameforge.com'.format(self.universe_id)
+        """Get a universe name and return the server url."""
+        servers = self.get_servers(self.domain)
+        universe = universe.lower()
+        if universe not in servers:
+            raise BAD_UNIVERSE_NAME
+        return servers[universe]
 
     def get_server_time(self):
         """Get the ogame server time."""
