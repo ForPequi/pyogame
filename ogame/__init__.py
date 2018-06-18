@@ -152,7 +152,7 @@ class OGame(object):
     def login(self):
         """Get the ogame session token."""
         payload = {'kid': '',
-                   'language': 'en',
+                   'language': 'es',
                    'autologin': 'false',
                    'credentials[email]': self.username,
                    'credentials[password]': self.password}
